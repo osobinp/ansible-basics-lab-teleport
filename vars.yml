@@ -1,0 +1,11 @@
+---
+teleport_dir: /var/lib/teleport
+teleport_repo: https://rpm.releases.teleport.dev/teleport.repo
+ss_key: teleport.key
+ss_crt: teleport.crt
+ss_csr: teleport.csr
+teleport_admin: pawel
+teleport_admin_allowed_users: "root,ec2-user,ansiblesvc"
+teleport_users:
+  - ansiblesvc
+teleport_users_allowed_users: "ansiblesvc"

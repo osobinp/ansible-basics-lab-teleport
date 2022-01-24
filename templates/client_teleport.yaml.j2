@@ -1,0 +1,16 @@
+version: v2
+teleport:
+  data_dir: {{ teleport_dir }}
+  auth_token: {{ teleport_token }}
+  auth_servers: 
+    - {{ teleport_ip_address }}:3025
+
+  log:
+    output: stdout
+    severity: INFO
+
+ssh_service:
+  enabled: yes
+  listen_addr: 0.0.0.0:3022
+  labels:
+    ssh: {{ inventory_hostname }}

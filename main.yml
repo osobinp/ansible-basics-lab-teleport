@@ -1,0 +1,140 @@
+---
+
+# Set global variables
+- name: "Set global vars"
+  hosts: all
+  tasks:
+  - name: "Set token fact and teleport IP"
+    set_fact:
+      teleport_token: "teleport-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      teleport_ip_address: "{% for host in groups['teleport_server'] %}{{ hostvars[host]['ansible_facts']['eth0']['ipv4']['address'] }}{% endfor %}"
+
+# Server configuration
+- name: "Setup server"
+  hosts: teleport_server
+
+  tasks:
+  
+  - name: "Include vars"
+    include_vars:
+      file: vars.yml
+
+  - name: "Include teleport repo"
+    command: "yum-config-manager --add-repo {{ teleport_repo }}"
+
+  - name: "Install teleport"
+    yum:
+      name: teleport
+      state: latest
+
+  # openssl_certificate cause more trouble than I need 
+  - name: "Generate a Self Signed OpenSSL certificate"
+    shell: "openssl req -newkey rsa:4096 -x509 -sha256 -days 3650 -nodes -out {{ teleport_dir }}/{{ ss_crt }} -keyout {{ teleport_dir }}/{{ ss_key }} -subj \"/C=PL/ST=Teleport/L=Tele/O=Happy Cert/OU=Ansible/CN=tele.ec2.local\""
+
+  - name: "Copy configuration file to server"
+    template:
+      src: templates/server_teleport.yaml.j2
+      dest: /etc/teleport.yaml
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: "Start teleport server"
+    ansible.builtin.service:
+      name: teleport
+      state: restarted
+      enabled: yes
+
+  - name: "Pause for 5 seconds so server become ready"
+    pause:
+      seconds: 5
+
+  # Poor mans idempotency, something to improve
+  - name: "Remove admin if exists"
+    command: "/usr/local/bin/tctl users rm {{ teleport_admin }}"
+    ignore_errors: yes
+
+  - name: "Remove user account"
+    command: "/usr/local/bin/tctl users rm {{ item }}"
+    loop: "{{ teleport_users }}"
+    ignore_errors: yes
+
+  - name: "Generate token"
+    command: "/usr/local/bin/tctl tokens add --type=node --ttl=24h --value {{ teleport_token }}"
+
+  - name: "Create admin account"
+    command: "/usr/local/bin/tctl users add {{ teleport_admin }} --roles=editor,access --logins={{ teleport_admin_allowed_users }}"
+    register: teleport_admin_cmd
+
+  - name: "Create user account"
+    command: "/usr/local/bin/tctl users add {{ item }} --roles=editor,access --logins={{ teleport_users_allowed_users }}"
+    loop: "{{ teleport_users }}"
+    register: teleport_users_cmd
+
+  - name: "Register ca-pin"
+    shell: "/usr/local/bin/tctl status | grep pin| awk '{print $3}' > /tmp/teleport_pin_file"
+    register: teleport_ca_pin
+
+  # I know its not secure approach but that's approach works for short living environments
+  - name: "Store file pin file locally"
+    fetch:
+      src: /tmp/teleport_pin_file
+      dest: /tmp/
+      flat: yes
+
+  - name: "Print admin invitation - COPY & PASTE /web/.... to set password"
+    debug:
+      msg: "{{ teleport_admin_cmd.stdout_lines }}"
+
+  - name: "Print users invitations - COPY & PASTE /web/.... to set password"
+    debug:
+      msg: "{{ item.stdout_lines }}"
+    loop: "{{ teleport_users_cmd.results }}"
+
+# Clients configuration
+- name: "Setup clients"
+  hosts: teleport_clients
+
+  tasks:
+
+  - name: "Include vars"
+    include_vars:
+      file: vars.yml
+
+  - name: "Fetch ca-pin file content"
+    set_fact:
+      teleport_ca_pinx: "{{lookup('file', '/tmp/teleport_pin_file') }}"
+    delegate_to: localhost
+
+  - name: "Include teleport repo"
+    command: "yum-config-manager --add-repo {{ teleport_repo }}"
+
+  - name: "Install teleport"
+    yum:
+      name: teleport
+      state: latest
+
+  - name: "Copy configuration file to client"
+    template:
+      src: templates/client_teleport.yaml.j2
+      dest: /etc/teleport.yaml
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: "Initial run of teleport"
+    shell: "/usr/local/bin/teleport start --roles=node --token={{ teleport_token }} --ca-pin={{ teleport_ca_pinx }} --auth-server={{ teleport_ip_address }}:3025 &"
+    ignore_errors: yes
+
+  - name: "Start teleport client"
+    ansible.builtin.service:
+      name: teleport
+      state: restarted
+      enabled: yes
+
+  - name: "Clean temp file"
+    become: no
+    local_action:
+      module: file 
+      path: /tmp/teleport_pin_file 
+      state: absent

@@ -1,0 +1,6 @@
+[teleport_server]
+ec2-18-210-12-19.compute-1.amazonaws.com
+
+[teleport_clients]
+ec2-3-219-31-95.compute-1.amazonaws.com
+ec2-3-235-2-112.compute-1.amazonaws.com
