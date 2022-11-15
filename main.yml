@@ -67,7 +67,7 @@
     register: teleport_admin_cmd
 
   - name: "Create user account"
-    command: "/usr/local/bin/tctl users add {{ item }} --roles=editor,access --logins={{ teleport_users_allowed_users }}"
+    command: "/usr/local/bin/tctl users add {{ item }} --roles=access --logins={{ teleport_users_allowed_users }}"
     loop: "{{ teleport_users }}"
     register: teleport_users_cmd
 

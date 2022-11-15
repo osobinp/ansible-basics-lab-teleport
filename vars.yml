@@ -5,7 +5,7 @@ ss_key: teleport.key
 ss_crt: teleport.crt
 ss_csr: teleport.csr
 teleport_admin: pawel
-teleport_admin_allowed_users: "root,ec2-user,ansiblesvc"
+teleport_admin_allowed_users: "root,ec2-user,ansiblesvc,apachesvc"
 teleport_users:
   - ansiblesvc
-teleport_users_allowed_users: "ansiblesvc"
+teleport_users_allowed_users: "ansiblesvc,apachesvc"
