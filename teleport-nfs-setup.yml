@@ -1,0 +1,61 @@
+---
+
+- name: "main()"
+  hosts: teleport_server
+  gather_facts: yes
+
+  vars:
+    share: "/nfs/data01"
+    options: "10.0.0.0/24(ro,sync,root_squash)" # not safe ... I know - just for lab purposes !
+    permission: '0755'
+
+  tasks:
+
+  # No point to reinvent the wheel so taken from with small pimp'n
+  # https://www.ansiblepilot.com/articles/export-an-nfs-share-in-redhat-like-systems-ansible-modules-yum-file-lineinfile-command-firewalld-service/
+
+  - name: NFS server installed
+    ansible.builtin.yum:
+      name:
+        - nfs-utils
+        - nfs4-acl-tools
+      state: present
+
+  - name: share directory exists
+    ansible.builtin.file:
+      path: "{{ share }}"
+      state: directory
+      mode: "{{ permission }}"
+      owner: root
+      group: root
+
+  - name: Extract witweb.zip into share location
+    ansible.builtin.unarchive:
+      src: witweb.zip
+      dest: "{{ share }}"
+
+  - name: share in /etc/exports file
+    ansible.builtin.lineinfile:
+      path: /etc/exports
+      state: present
+      line: '{{ share }} {{ options }}'
+    notify:
+      - restart NFS server
+      - restart NFS service
+
+  - name: export share
+    ansible.builtin.command: "/sbin/exportfs -rav"
+
+  handlers:
+
+  - name: restart NFS server
+    ansible.builtin.service:
+      name: nfs-server
+      state: restarted
+      enabled: yes
+
+  - name: restart NFS service
+    ansible.builtin.service:
+      name: nfs
+      state: restarted
+      enabled: yes

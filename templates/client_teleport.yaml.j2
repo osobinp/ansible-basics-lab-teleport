@@ -1,16 +1,36 @@
-version: v2
+version: v3
 teleport:
   data_dir: {{ teleport_dir }}
   auth_token: {{ teleport_token }}
-  auth_servers: 
-    - {{ teleport_ip_address }}:3025
+  ca_pin: {{ teleport_ca_pinx }}
+  auth_server: {{ teleport_ip_address }}:3025
 
   log:
     output: stdout
     severity: INFO
 
+auth_service:
+  enabled: "no"
+
+proxy_service:
+  enabled: "no"
+
 ssh_service:
   enabled: yes
-  listen_addr: 0.0.0.0:3022
   labels:
     ssh: {{ inventory_hostname }}
+
+app_service:
+    enabled: no
+
+kubernetes_service:
+    enabled: no
+
+discovery_service:
+    enabled: no
+
+db_service:
+  enabled: no
+
+windows_desktop_service:
+  enabled: no
