@@ -46,11 +46,6 @@
   - name: export share
     ansible.builtin.command: "/sbin/exportfs -rav"
 
-  - name: "Make sure teleport is up but it will not start during boot process"
-    ansible.builtin.service:
-      name: teleport
-      state: started
-      enabled: no
 
   handlers:
 
@@ -65,3 +60,16 @@
       name: nfs
       state: restarted
       enabled: yes
+
+
+##
+- name: "Clients lab tuning"
+  hosts: linux_hosts
+  gather_facts: no
+
+  tasks:
+
+  - name: "Disable teleport service during boot"
+    ansible.builtin.systemd:
+      name: teleport
+      enabled: no
