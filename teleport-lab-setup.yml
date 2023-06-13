@@ -73,3 +73,28 @@
     ansible.builtin.systemd:
       name: teleport
       enabled: no
+
+  - name: Install or upgrade the net-tools package
+    ansible.builtin.yum:
+      name: net-tools
+      state: latest
+
+  - name: "Start firewalld service during boot"
+    ansible.builtin.systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+
+  - name: tcp ports facts
+    listen_ports_facts:
+
+  - name: Add ports to firewall
+    ansible.posix.firewalld:
+      port: "{{ item }}/tcp"
+      state: enabled
+      immediate: true
+      permanent: true
+    loop: "{{ ansible_facts.tcp_listen  | map(attribute='port') | sort | list }}"
+    register: ports_added_to_firewalld
+    vars:
+      ansible_python_interpreter: /usr/bin/python # just in case it's triggered from debian based host
