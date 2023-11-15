@@ -1,0 +1,15 @@
+server {
+    listen 443 http2 ssl;
+    listen [::]:443 http2 ssl;
+
+    ssl_certificate {{ vscode_ssl_crt }};
+    ssl_certificate_key {{ vscode_ssl_key }};
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+
+	location / {
+	  proxy_pass http://{{ vscode_bind_addr }}/;
+	  proxy_set_header Upgrade $http_upgrade;
+	  proxy_set_header Connection upgrade;
+	  proxy_set_header Accept-Encoding gzip;
+	}
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=code-server
+After=nginx.service
+
+[Service]
+User={{ vscode_user }}
+Group={{ vscode_user }}
+WorkingDirectory={{ vscode_home_dir }}
+Type=simple
+Environment=PASSWORD={{ my_secret_pw }}
+ExecStart=/usr/bin/code-server --bind-addr {{ vscode_bind_addr }} --user-data-dir {{ vscode_home_dir }} --auth password --disable-update-check --disable-workspace-trust
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

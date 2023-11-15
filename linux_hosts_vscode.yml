@@ -1,0 +1,11 @@
+---
+
+- name: "Add vscode host to new inventory - every 2nd host"
+  ansible.builtin.add_host:
+    name: '{{ item }}'
+    groups: linux_hosts_vscode
+  when: linux_hosts_count | int % 2
+
+- name: "Decrease hosts count"
+  set_fact:
+    linux_hosts_count: "{{ linux_hosts_count | int - 1 }}"

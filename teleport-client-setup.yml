@@ -1,0 +1,54 @@
+---
+
+- name: "Include vars"
+  include_vars:
+    file: vars.yml
+
+# - name: "Generate token"
+#   command: "/usr/local/bin/tctl tokens add --type=node --ttl=24h --value {{ teleport_token }} --insecure"
+#   delegate_to: "{{ groups['teleport_server'][0] }}"
+
+- name: "Fetch ca-pin file content"
+  set_fact:
+    teleport_ca_pinx: "{{ lookup('file', '/tmp/teleport_pin_file') }}"
+  delegate_to: localhost
+
+- name: "Include teleport repo"
+  command: "yum-config-manager --add-repo {{ teleport_repo }}"
+
+- name: "Install teleport"
+  yum:
+    name: teleport
+    state: latest
+
+# https://goteleport.com/docs/management/admin/self-signed-certs/
+- name: "Allow insecure (self-signed) connections"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/teleport.service
+    regexp: '^ExecStart='
+    line: "ExecStart=/usr/local/bin/teleport start --pid-file=/run/teleport.pid --insecure"
+
+- name: "Just force systemd to reread configs"
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: "Copy configuration file to client"
+  template:
+    src: templates/client_teleport.yaml.j2
+    dest: /etc/teleport.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Start teleport client"
+  ansible.builtin.service:
+    name: teleport
+    state: restarted
+    enabled: yes
+
+- name: "Clean temp file"
+  become: no
+  local_action:
+    module: file 
+    path: /tmp/teleport_pin_file 
+    state: absent

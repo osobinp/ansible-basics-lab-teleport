@@ -9,3 +9,14 @@ teleport_admin_allowed_users: "root,ec2-user,ansiblesvc,apachesvc"
 teleport_users:
   - ansiblesvc
 teleport_users_allowed_users: "ansiblesvc,apachesvc"
+
+vscode_release: "4.8.1"
+vscode_app_dir: "/usr/lib/code-server"
+vscode_bind_addr: "127.0.0.1:3000"
+vscode_home_dir: "/home/{{ vscode_user }}"
+vscode_user: "ansiblesvc"
+this_year: 2023
+my_secret_pw: "wit.{{ this_year }}"
+vscode_ssl_key: "/etc/ssl/private/nginx-vscode.key"
+vscode_ssl_crt: "/etc/ssl/certs/nginx-vscode.crt"
+vscode_ssl_sub: "/C=PL/ST=Dev/L=Null/O=Happy/OU=Company/CN=VSCodeSelfSigned"

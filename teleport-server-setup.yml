@@ -1,0 +1,82 @@
+---
+
+- name: "Include vars"
+  include_vars:
+    file: vars.yml
+
+- name: "Include teleport repo"
+  command: "yum-config-manager --add-repo {{ teleport_repo }}"
+
+- name: "Install teleport"
+  yum:
+    name: teleport
+    state: latest
+
+# https://goteleport.com/docs/management/admin/self-signed-certs/
+- name: "Allow insecure (self-signed) connections"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/teleport.service
+    regexp: '^ExecStart='
+    line: "ExecStart=/usr/local/bin/teleport start --pid-file=/run/teleport.pid --insecure"
+
+- name: "Just force systemd to reread configs"
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: "Copy configuration file to server"
+  template:
+    src: templates/server_teleport.yaml.j2
+    dest: /etc/teleport.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Start teleport server"
+  ansible.builtin.service:
+    name: teleport
+    state: restarted
+    enabled: yes
+
+- name: "Pause for 5 seconds so server become ready"
+  pause:
+    seconds: 5
+
+# Poor mans idempotency, something to improve
+- name: "Remove admin if exists"
+  command: "/usr/local/bin/tctl users rm {{ teleport_admin }}"
+  ignore_errors: yes
+
+- name: "Remove user account"
+  command: "/usr/local/bin/tctl users rm {{ item }}"
+  loop: "{{ teleport_users }}"
+  ignore_errors: yes
+
+- name: "Create admin account"
+  command: "/usr/local/bin/tctl users add {{ teleport_admin }} --roles=editor,access --logins={{ teleport_admin_allowed_users }} --insecure"
+  register: teleport_admin_cmd
+
+- name: "Create user account"
+  command: "/usr/local/bin/tctl users add {{ item }} --roles=access --logins={{ teleport_users_allowed_users }} --insecure"
+  loop: "{{ teleport_users }}"
+  register: teleport_users_cmd
+
+- name: "Register ca-pin"
+  shell: "/usr/local/bin/tctl status --insecure | grep pin| awk '{print $3}' > /tmp/teleport_pin_file"
+  register: teleport_ca_pin
+
+# I know its not secure approach but that's approach works for short living environments
+- name: "Store file pin file locally"
+  fetch:
+    src: /tmp/teleport_pin_file
+    dest: /tmp/
+    flat: yes
+
+- name: "Print admin invitation - COPY & PASTE /web/.... to set password"
+  debug:
+    msg: "{{ teleport_admin_cmd.stdout_lines }}"
+
+- name: "Print users invitations - COPY & PASTE /web/.... to set password"
+  debug:
+    msg: "{{ item.stdout_lines }}"
+  loop: "{{ teleport_users_cmd.results }}"
+
