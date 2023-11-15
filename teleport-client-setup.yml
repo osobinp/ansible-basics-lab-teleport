@@ -4,9 +4,9 @@
   include_vars:
     file: vars.yml
 
-# - name: "Generate token"
-#   command: "/usr/local/bin/tctl tokens add --type=node --ttl=24h --value {{ teleport_token }} --insecure"
-#   delegate_to: "{{ groups['teleport_server'][0] }}"
+- name: "Generate token"
+  command: "/usr/local/bin/tctl tokens add --type=node --ttl=24h --value {{ teleport_token }} --insecure"
+  delegate_to: "{{ groups['teleport_server'][0] }}"
 
 - name: "Fetch ca-pin file content"
   set_fact:
