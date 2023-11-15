@@ -8,7 +8,6 @@
   tasks:
   - name: "Set token fact and teleport IP"
     set_fact:
-      # teleport_token: "teleport-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
       teleport_token: "teleport-{{ ansible_hostname }}"
       teleport_ip_address: "{% for host in groups['teleport_server'] %}{{ hostvars[host]['ansible_facts']['eth0']['ipv4']['address'] }}{% endfor %}"
 
@@ -31,7 +30,6 @@
     linux_hosts_count: "{{ groups['linux_hosts'] | length }}"
 
   tasks:
-
   - name: "Generate vscode dynamic inventory"
     include_tasks: linux_hosts_vscode.yml
     loop: "{{ groups['linux_hosts'] }}"
@@ -43,7 +41,6 @@
   gather_facts: no
 
   tasks:
-
   - name: "Include vars"
     include_vars:
       file: vars.yml
@@ -57,8 +54,12 @@
 ### Clients configuration
 - name: "Setup clients"
   hosts: linux_hosts
+  serial: 2
 
   tasks:
+  - name: "Set lab id fact"
+    ansible.builtin.set_fact:
+      teleport_lab_id: "{{ ansible_date_time.minute }}"
 
-  - name: "Include clent setup tasks"
+  - name: "Include client setup tasks"
     include_tasks: teleport-client-setup.yml

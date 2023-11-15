@@ -18,8 +18,12 @@ proxy_service:
 ssh_service:
   enabled: yes
   labels:
-    {% if inventory_hostname in groups['linux_hosts_vscode'] %}vscode: https://{{ inventory_hostname }}{% endif %}
     ssh: {{ inventory_hostname }}
+    lab: {{ teleport_lab_id }}
+{% if inventory_hostname in groups['linux_hosts_vscode'] %}
+    vscode: https://{{ inventory_hostname }}
+{% endif %}
+
 
 app_service:
     enabled: no

@@ -46,9 +46,6 @@
     state: restarted
     enabled: yes
 
-- name: "Clean temp file"
-  become: no
-  local_action:
-    module: file 
-    path: /tmp/teleport_pin_file 
-    state: absent
+- name: "Pause for 10 seconds to make app stable"
+  ansible.builtin.pause:
+    seconds: 10
