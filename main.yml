@@ -14,12 +14,12 @@
 
 
 ### Server configuration
-# - name: "Setup server"
-#   hosts: teleport_server
+- name: "Setup server"
+  hosts: teleport_server
 
-#   tasks:
-#   - name: "Include teleport server setup"
-#     include_tasks: teleport-server-setup.yml
+  tasks:
+  - name: "Include teleport server setup"
+    include_tasks: teleport-server-setup.yml
 
 
 ### Create inventory from linux_hosts for vscode
@@ -38,20 +38,20 @@
 
 
 ### Setup vscode
-# - name: "Setup vscode on clients"
-#   hosts: linux_hosts_vscode
-#   gather_facts: no
+- name: "Setup vscode on clients"
+  hosts: linux_hosts_vscode
+  gather_facts: no
 
-#   tasks:
+  tasks:
 
-#   - name: "Include vars"
-#     include_vars:
-#       file: vars.yml
+  - name: "Include vars"
+    include_vars:
+      file: vars.yml
       
-#   # Based on
-#   # https://www.digitalocean.com/community/tutorials/how-to-set-up-the-code-server-cloud-ide-platform-on-centos-7
-#   - name: "Include vscode setup playbook"
-#     include_tasks: vscode-setup.yml
+  # Based on
+  # https://www.digitalocean.com/community/tutorials/how-to-set-up-the-code-server-cloud-ide-platform-on-centos-7
+  - name: "Include vscode setup playbook"
+    include_tasks: vscode-setup.yml
 
 
 ### Clients configuration
